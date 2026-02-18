@@ -1,114 +1,146 @@
-# Online Chess Bot Example
+Overview
 
-> *Disclaimer: This repository exists purely to demonstrate the simplicity of chess automation, challenging claims about "sophisticated" detection systems. Please use this knowledge responsibly, or don't - It's not my problem.*
+This project demonstrates a basic online chess automation setup using:
 
-## Introduction
-This is the companion code to the YouTube video [https://youtu.be/S--1kgug2lw] where we explore how embarrassingly simple it is to automate chess moves online. If you're here to lecture about code quality, please note that my inbox is already full of strongly-worded emails about proper documentation practices. It is quick and dirty, simply a demo.
+A UCI-compatible chess engine (e.g., Stockfish)
 
-## Prerequisites
+A lightweight Python backend
 
-- Python 3 (preferably from this decade)
-- A UCI chess engine of your choice (e.g. [Stockfish](https://stockfishchess.org/download/))
-- Google Chrome
-- The ability to resist using this in actual games (recommended)
+A Chrome extension frontend
 
-## System Requirements
+The implementation is intentionally simple and minimal. It is designed as a proof-of-concept, not a production-ready system.
 
-To check if Python is installed:
-```bash
-python -V  # or python3 -V if you're fancy
-```
+Prerequisites
 
-If you get an error, either Python isn't installed or your computer is having an existential crisis.
+Make sure you have the following installed:
 
-# Installation
+Python 3
 
-## Backend
+A UCI chess engine (e.g., Stockfish: https://stockfishchess.org/download/
+)
 
-1. Navigate to the backend folder:
+Google Chrome
 
-```bash
+To check your Python installation:
+
+python -V
+# or
+python3 -V
+
+
+If this returns a version number, you're good to go.
+
+Project Structure
+backend/
+extension/
+
+
+backend/ – Python server that communicates with the chess engine
+
+extension/ – Chrome extension that interacts with the browser
+
+Installation
+Backend Setup
+1. Navigate to the backend folder
 cd backend
-```
 
-2. Create a virtual environment:
+2. Create a virtual environment
 
-```bash
-# Windows
+Windows:
+
 python -m venv venv
 
-# MacOS/Linux
+
+MacOS/Linux:
+
 python3 -m venv venv
-```
 
-3. Activate the virtual environment:
+3. Activate the virtual environment
 
-```bash
-# Windows
+Windows:
+
 venv\Scripts\activate
 
-# MacOS/Linux
+
+MacOS/Linux:
+
 source venv/bin/activate
-```
 
-4. Install the required packages:
-
-```bash
+4. Install dependencies
 pip install -r requirements.txt
-```
 
-5. Create an engines directory and add your UCI engine:
+5. Add your chess engine
 
-```
+Create an engines directory inside backend and place your UCI engine executable inside it.
+
+Example:
+
 backend/
 └── engines/
     └── stockfish.exe
-```
 
-6. Configure the `.env` file:
+6. Configure the .env file
 
-```bash
+Create or edit a .env file inside backend:
+
 ENGINE="stockfish.exe"
 ENGINES_PATH="./engines"
-```
 
-7. Run the server:
 
-```bash
+Adjust the engine name if needed.
+
+7. Start the backend server
 python server.py
-```
 
-The server will be running at `http://localhost:5000`.
 
-## Frontend
+The server will run at:
 
-1. Open Google Chrome (yes, it has to be Chrome, I'm not writing browser-specific code for fun)
+http://localhost:5000
 
-2. Go to `chrome://extensions/`
 
-3. Turn on developer mode using the switch top right
+Make sure this is running before using the extension.
 
-4. Then, top left, select `Load unpacked`
+Frontend (Chrome Extension) Setup
 
-5. Browse to the `extension` folder of the repo
+Open Google Chrome
 
-## Usage
+Navigate to:
 
-> Note: the backend must be running before you open the browser
+chrome://extensions/
 
-1. Visit chess.com
-2. Go to board settings and set **Piece Notation** to **Text** (not figurine — this matters)
-3. Start a game
-4. Look for the engine bar below the board
-5. Click **Start Engine**
-6. Make a move and watch your silicon overlord suggest the best line
 
-## Important Notes
+Enable Developer Mode (top right)
 
-* Everything except the UCI engine is included. You'll need to source that yourself because I'm not getting into licensing discussions. Stockfish is free and works great.
-* This code is intentionally quick and dirty. If you're here to critique the architecture, please redirect your energy towards solving world hunger.
-* To the code police: Yes, I know about best practices. No, I didn't use them. We all have our crosses to bear.
+Click Load unpacked
 
-## Final Thoughts
+Select the extension folder from this repository
 
-Remember: Just because you *can* build a chess bot doesn't mean you *should* use it. Maybe try getting better at chess instead? Just a thought.
+The extension should now be installed.
+
+Usage
+
+The backend server must be running before using the extension.
+
+Go to chess.com
+
+Open board settings
+
+Set Piece Notation to Text (not figurine)
+
+Start a game
+
+Look for the engine panel below the board
+
+Click Start Engine
+
+Make a move to receive engine suggestions
+
+Important Notes
+
+The repository does not include a chess engine. You must download one separately.
+
+Stockfish is free and works well for this setup.
+
+This project is intentionally minimal and does not follow full production best practices.
+
+Use responsibly and respect the rules of any platform you use.
