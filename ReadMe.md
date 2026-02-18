@@ -3,12 +3,13 @@
 > *Disclaimer: This repository exists purely to demonstrate the simplicity of chess automation, challenging claims about "sophisticated" detection systems. Please use this knowledge responsibly, or don't - It's not my problem.*
 
 ## Introduction
-This is the companion code to the YouTube video [https://youtu.be/S--1kgug2lw] where we explore how embarrassingly simple it is to automate chess moves online. If you're here to lecture about code quality, please note that my inbox is already full of strongly-worded emails about proper documentation practices. It is quick and dirty, simply a demo
+This is the companion code to the YouTube video [https://youtu.be/S--1kgug2lw] where we explore how embarrassingly simple it is to automate chess moves online. If you're here to lecture about code quality, please note that my inbox is already full of strongly-worded emails about proper documentation practices. It is quick and dirty, simply a demo.
 
 ## Prerequisites
 
 - Python 3 (preferably from this decade)
-- A UCI chess engine of your choice
+- A UCI chess engine of your choice (e.g. [Stockfish](https://stockfishchess.org/download/))
+- Google Chrome
 - The ability to resist using this in actual games (recommended)
 
 ## System Requirements
@@ -33,7 +34,6 @@ cd backend
 2. Create a virtual environment:
 
 ```bash
-
 # Windows
 python -m venv venv
 
@@ -51,38 +51,36 @@ venv\Scripts\activate
 source venv/bin/activate
 ```
 
-
 4. Install the required packages:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-
 5. Create an engines directory and add your UCI engine:
+
 ```
 backend/
 └── engines/
     └── stockfish.exe
 ```
 
-6. Configure the .env file:
+6. Configure the `.env` file:
 
 ```bash
 ENGINE="stockfish.exe"
 ENGINES_PATH="./engines"
 ```
 
-6. Run the server
+7. Run the server:
 
 ```bash
 python server.py
 ```
-and the server will be running.
+
+The server will be running at `http://localhost:5000`.
 
 ## Frontend
-This is easier.
-
 
 1. Open Google Chrome (yes, it has to be Chrome, I'm not writing browser-specific code for fun)
 
@@ -92,23 +90,23 @@ This is easier.
 
 4. Then, top left, select `Load unpacked`
 
-5. Browse to the extension folder of the repo.
+5. Browse to the `extension` folder of the repo
 
 ## Usage
 
-> Note: the backend should be running before you start the browser
+> Note: the backend must be running before you open the browser
 
 1. Visit chess.com
-2. Set board Piece Notation to text (not figurine, because I value my free time)
-3. Press F12 to open developer tools (if you want to see the console output)
-4. Start a game
-5. Look for the engine bar below the board
-6. Click start to activate your silicon overlord
+2. Go to board settings and set **Piece Notation** to **Text** (not figurine — this matters)
+3. Start a game
+4. Look for the engine bar below the board
+5. Click **Start Engine**
+6. Make a move and watch your silicon overlord suggest the best line
 
 ## Important Notes
 
+* Everything except the UCI engine is included. You'll need to source that yourself because I'm not getting into licensing discussions. Stockfish is free and works great.
 * This code is intentionally quick and dirty. If you're here to critique the architecture, please redirect your energy towards solving world hunger.
-* Everything except the UCI engine is included. You'll need to source that yourself because I'm not getting into licensing discussions.
 * To the code police: Yes, I know about best practices. No, I didn't use them. We all have our crosses to bear.
 
 ## Final Thoughts
