@@ -2,6 +2,7 @@ from http import HTTPStatus
 import os
 import subprocess
 import threading
+import time
 from flask import Flask, request, jsonify
 from flask_socketio import SocketIO
 from flask_cors import CORS
@@ -16,14 +17,12 @@ CORS(app)  # anywhere, we don't care
 socketio = SocketIO(app, cors_allowed_origins="*") # security is important
 
 FULL_ENGINE_PATH = f'{os.getenv("ENGINES_PATH")}/{os.getenv("ENGINE")}'
-MULTIPV = 5
-
+MULTIPV = 1
 
 engine_process = None # with luck this will be the engine process
 output_thread = None # when the engine is started, this thread will read the output
 running = False # is the engine running
 current_board = chess.Board()
-
 
 current_depth_buffer = {} # dict for the mulitpv output
 current_depth = None
@@ -36,17 +35,11 @@ def make_response(data=None, message=None, error=None, status=HTTPStatus.OK):
         response["error"] = error
     if data:
         response["data"] = data
-
     print(response)
     return jsonify(response), status
 
 
 def convert_san_to_lan(san_moves: list):
-    '''
-    san_moves should be a list of SAN moves (e.g. ["e4", "e5", "Nf3", "Nc6"])
-
-    If it isn't then bang.
-    '''
     board = chess.Board()
     lan_moves = []
     for san in san_moves:
@@ -60,106 +53,65 @@ def convert_san_to_lan(san_moves: list):
 
 
 def parse_engine_output(output: str):
-    '''
-    output should be a pv line
-
-    If it isn't then bang.
-    '''
     try:
         pv_match = re.search(r'pv\s+((?:\w+\d+\w+\d+\s*)+)', output)
         if not pv_match:
             return output
-        
         uci_moves = pv_match.group(1).strip().split()
-        
         temp_board = current_board.copy()
         san_moves = []
         for uci_move in uci_moves:
             move = chess.Move.from_uci(uci_move)
             san_moves.append(temp_board.san(move))
             temp_board.push(move)
-            
         modified_output = output[:pv_match.start(1)] + ' '.join(san_moves) + output[pv_match.end(1):]
         return modified_output
-        
     except Exception as e:
         print(f"Error parsing engine output: {e}")
         return output
 
 
-def process_engine_line(line):    
-    '''
-    UCI engines spit out a huge amount of info, try to find the multipv lines and parse them
-    '''
-
+def process_engine_line(line):
     global current_depth_buffer, current_depth
-    
     if "info multipv" not in line:
         return None
-        
     depth_match = re.search(r'depth (\d+)', line)
     multipv_match = re.search(r'multipv (\d+)', line)
-    
     if not depth_match or not multipv_match:
         return None
-    
-
-    # we'll assume int here, if it breaks, we derserve it anyway (bruh) 
     depth = int(depth_match.group(1))
     multipv = int(multipv_match.group(1))
-    
     if depth != current_depth:
         current_depth = depth
         current_depth_buffer = {}
-    
     parsed_line = parse_engine_output(line)
     current_depth_buffer[multipv] = parsed_line
-    
-    if len(current_depth_buffer) == 5: 
-        lines = []
-        for i in range(1, MULTIPV):
-            if i in current_depth_buffer:
-                lines.append(current_depth_buffer[i])
-        return lines
-    
-    return None # great
+    return [parsed_line]
 
 
 def on_engine_output(output):
-    '''
-    we've had some output. Try to exctract something.
-    '''
-    
-    if "info multipv" in output: 
+    if "info multipv" in output:
+        print(f"MULTIPV LINE: {output}")
         complete_depth = process_engine_line(output)
-        if complete_depth and len(complete_depth) > 0: # such a hack like this whole thing
+        print(f"COMPLETE DEPTH: {complete_depth}")
+        if complete_depth and len(complete_depth) > 0:
             socketio.emit('engine_output', {'data': complete_depth})
             socketio.emit('engine_output_single', {'data': complete_depth[0]})
 
 
 def process_engine_output():
-    '''
-    wait around (forever) for something from the engine.
-    '''
-    
     while running:
         line = engine_process.stdout.readline()
-        if not line:  # Engine might have crashed we can NO LONGER CHEAT DAMMIT
+        if not line:
             break
+        print(f"ENGINE OUTPUT: {line.strip()}")
         on_engine_output(line.strip())
 
 
-def start_engine():   
-    '''
-    Better have your path set correctly in the .env file otherwise boom here
-    '''
-    
+def start_engine():
     global engine_process, output_thread, running
-
     if engine_process:
-        # like a broken pencil, this - pointless
-        raise Exception("Engine already running")
-
+        stop_engine()
     engine_process = subprocess.Popen(
         [FULL_ENGINE_PATH],
         stdin=subprocess.PIPE,
@@ -169,15 +121,13 @@ def start_engine():
         bufsize=1,
     )
     running = True
-
+    time.sleep(0.5)
     output_thread = threading.Thread(target=process_engine_output, daemon=True)
     output_thread.start()
 
 
 def stop_engine():
-    
     global engine_process, running, current_depth_buffer, current_depth
-
     if engine_process:
         running = False
         engine_process.stdin.write("quit\n")
@@ -190,22 +140,23 @@ def stop_engine():
 
 def send_command(command):
     if engine_process:
-        engine_process.stdin.write(command + "\n") # all uci commands end in newline
-        engine_process.stdin.flush() # ahem
+        engine_process.stdin.write(command + "\n")
+        engine_process.stdin.flush()
 
 
 @app.route("/start", methods=["POST"])
 def start_analysis():
     try:
         global current_board
+        if engine_process:
+            stop_engine()
         current_board = chess.Board()
         start_engine()
         send_command("uci")
         send_command("isready")
         send_command(f"setoption name MultiPV value {MULTIPV}")
+        send_command("setoption name Hash value 256")
         send_command("ucinewgame")
-        send_command("position startpos")
-        send_command("go infinite")
         return make_response(message="Engine started in infinite analysis mode", status=HTTPStatus.OK)
     except Exception as e:
         return make_response(error=str(e), status=HTTPStatus.BAD_REQUEST)
@@ -226,31 +177,20 @@ def moves():
     san_moves = request.json.get("moves")
     if not san_moves or not isinstance(san_moves, list):
         return make_response(error="Invalid input. Please provide a list of SAN moves.", status=HTTPStatus.BAD_REQUEST)
-    
-    
-    '''
-    this should really be in it's own function. 
-    It is here due to laziness, I wanted to return the san moves when I was debugging.
-    '''
-    
     try:
         socketio.emit('clear_output')
         lan_moves = convert_san_to_lan(san_moves)
         current_board = chess.Board()
         for move in lan_moves:
             current_board.push(chess.Move.from_uci(move))
-        
-        # Reset depth tracking
         current_depth_buffer = {}
         current_depth = None
-            
         send_command("stop")
         send_command(f"position startpos moves {' '.join(lan_moves)}")
-        send_command("go infinite")
+        send_command("go depth 20")
         return make_response(message=f"Moves sent: {san_moves}", status=HTTPStatus.OK)
     except Exception as e:
         return make_response(error=str(e), status=HTTPStatus.BAD_REQUEST)
-
 
 
 @app.route("/status", methods=["GET"])

@@ -130,7 +130,14 @@ function initializeControls() {
     elements.toggle.addEventListener('click', async () => {
         const endpoint = engineRunning ? API_ENDPOINTS.STOP : API_ENDPOINTS.START;
         try {
-            await fetch(`${API_ENDPOINTS.BASE_URL}${endpoint}`, { method: 'POST' });
+            // Updated fetch call to include headers and a body
+            await fetch(`${API_ENDPOINTS.BASE_URL}${endpoint}`, { 
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({}) // Backend requires this to avoid the 400 error
+            });
             await updateButtonState();
         } catch (error) {
             console.error('Error toggling engine:', error);
@@ -178,6 +185,13 @@ async function sendMovesToBackend(moves) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ moves })
         });
+
+        if (!response.ok) {
+            const text = await response.text();
+            console.error(`APP:: Server error ${response.status}:`, text);
+            return;
+        }
+
         await response.json();
     } catch (error) {
         console.error('APP:: Error sending moves:', error);

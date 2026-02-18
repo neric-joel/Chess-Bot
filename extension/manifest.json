@@ -9,6 +9,9 @@
             "js": ["socket.io.min.js", "content.js"]
         }
     ],
+    "host_permissions": [
+        "http://localhost:5000/*"
+    ],
     "icons": {
         "16": "icon16.png",
         "48": "icon48.png",
