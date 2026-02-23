@@ -10,16 +10,16 @@ from dotenv import load_dotenv
 import chess
 import re
 
-load_dotenv(override=True) # because Vscode is weird and caches env vars
+load_dotenv(override=True) #  env vars
 
 app = Flask(__name__)
-CORS(app)  # anywhere, we don't care
+CORS(app)  # anywhere
 socketio = SocketIO(app, cors_allowed_origins="*") # security is important
 
 FULL_ENGINE_PATH = f'{os.getenv("ENGINES_PATH")}/{os.getenv("ENGINE")}'
 MULTIPV = 1
 
-engine_process = None # with luck this will be the engine process
+engine_process = None 
 output_thread = None # when the engine is started, this thread will read the output
 running = False # is the engine running
 current_board = chess.Board()
